@@ -1,0 +1,15 @@
+{
+  "name": "banjo-status",
+  "version": "1.0.0",
+  "description": "Aplikacion i thjeshte per te treguar nese banjoja e zyres eshte e lire ose e zene",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
