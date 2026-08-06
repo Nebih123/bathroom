@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banjo e Zyrës</title>
+<style>
+  :root {
+    --free-color: #16a34a;
+    --free-bg: #ecfdf3;
+    --occupied-color: #dc2626;
+    --occupied-bg: #fef2f2;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --surface: #ffffff;
+    --page-bg: #f4f5f7;
+    --accent: #4f46e5;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --shadow: 0 8px 30px rgba(17, 24, 39, 0.07);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 500px at 10% -10%, #eef2ff 0%, transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, #ecfdf5 0%, transparent 55%),
+      var(--page-bg);
+    color: var(--ink);
+    padding: 28px 16px 60px;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .app-header .emoji {
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .app-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .app-header p {
+    margin: 2px 0 0 0;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+
+  /* ---------- Karta e statusit live ---------- */
+
+  .status-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 22px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    border: 1px solid var(--line);
+    transition: border-color 0.3s ease;
+  }
+
+  .status-dot {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .status-card.free .status-dot { background: var(--free-bg); box-shadow: 0 0 0 6px rgba(22,163,74,0.08); }
+  .status-card.occupied .status-dot { background: var(--occupied-bg); box-shadow: 0 0 0 6px rgba(220,38,38,0.08); }
+
+  .status-info { flex: 1; min-width: 0; }
+
+  .status-info .label {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .status-card.free .status-info .label { color: var(--free-color); }
+  .status-card.occupied .status-info .label { color: var(--occupied-color); }
+
+  .status-info .sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  button.toggle-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.1s ease, opacity 0.2s ease;
+  }
+
+  button.toggle-btn:active { transform: scale(0.97); }
+  .status-card.free button.toggle-btn { background: var(--occupied-color); }
+  .status-card.occupied button.toggle-btn { background: var(--free-color); }
+  button.toggle-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ---------- Karta e kalendarit ---------- */
+
+  .calendar-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+
+  .calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .date-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: #fafafa;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease;
+  }
+
+  .nav-btn:hover { background: #eef2ff; }
+
+  .date-label {
+    font-weight: 700;
+    font-size: 15px;
+    min-width: 170px;
+    text-align: center;
+    text-transform: capitalize;
+  }
+
+  .today-btn {
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: #fff;
+    border-radius: 9px;
+    padding: 6px 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .add-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .add-btn:hover { opacity: 0.92; }
+
+  .timeline-scroll {
+    max-height: 560px;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 58px;
+    padding-right: 16px;
+  }
+
+  .hour-row {
+    position: relative;
+    height: 56px;
+    border-top: 1px solid var(--line);
+  }
+
+  .hour-row:first-child { border-top: none; }
+
+  .hour-row .hour-label {
+    position: absolute;
+    left: -58px;
+    top: -8px;
+    width: 48px;
+    text-align: right;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .half-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 28px;
+    border-top: 1px dashed #f0f1f3;
+  }
+
+  .now-line {
+    position: absolute;
+    left: 0;
+    right: 16px;
+    height: 0;
+    border-top: 2px solid #ef4444;
+    z-index: 5;
+  }
+
+  .now-line::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+  }
+
+  .booking-block {
+    position: absolute;
+    left: 4px;
+    right: 16px;
+    border-radius: 10px;
+    padding: 0 30px 0 10px;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    overflow: hidden;
+    cursor: default;
+    transition: filter 0.15s ease, transform 0.1s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .booking-block:hover { filter: brightness(1.05); }
+
+  .booking-block .b-line {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.97;
+  }
+
+  .booking-block .b-close {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    color: #fff;
+    border: none;
+    font-size: 12px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    display: none;
+  }
+
+  .booking-block:hover .b-close { display: block; }
+
+  .empty-day {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ---------- Modal ---------- */
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    padding: 22px;
+    max-width: 360px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: pop 0.15s ease;
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.96); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .modal-card h2 {
+    margin: 0 0 16px 0;
+    font-size: 17px;
+    font-weight: 800;
+  }
+
+  .field { margin-bottom: 14px; }
+
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    font-size: 14.5px;
+    outline: none;
+  }
+
+  .field input:focus { border-color: var(--accent); }
+
+  .field select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    font-size: 14.5px;
+    outline: none;
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .field select:focus { border-color: var(--accent); }
+
+  .computed-end {
+    font-size: 13px;
+    color: var(--muted);
+    margin: -6px 0 16px 0;
+  }
+
+  .computed-end strong { color: var(--ink); }
+
+  .modal-error {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-radius: 9px;
+    padding: 9px 11px;
+    font-size: 12.5px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .modal-actions button {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-cancel { background: #f3f4f6; color: var(--ink); }
+  .btn-save { background: var(--accent); color: #fff; }
+  .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .footer-note {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11.5px;
+    color: #9ca3af;
+  }
+
+  @media (max-width: 480px) {
+    .date-label { min-width: 120px; font-size: 13.5px; }
+    .timeline { padding-left: 46px; }
+    .hour-row .hour-label { left: -46px; width: 38px; font-size: 10.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="app-header">
+    <div class="emoji">🚻</div>
+    <div>
+      <h1>Banjo e Zyrës</h1>
+      <p>Statusi live dhe rezervimet e ditës</p>
+    </div>
+  </div>
+
+  <div class="status-card" id="statusCard">
+    <div class="status-dot" id="statusDot">✅</div>
+    <div class="status-info">
+      <div class="label" id="statusLabel">Duke ngarkuar...</div>
+      <div class="sub" id="statusSub">&nbsp;</div>
+    </div>
+    <button class="toggle-btn" id="toggleBtn">Ndrysho</button>
+  </div>
+
+  <div class="calendar-card">
+    <div class="calendar-header">
+      <div class="date-nav">
+        <button class="nav-btn" id="prevDay">‹</button>
+        <div class="date-label" id="dateLabel">–</div>
+        <button class="nav-btn" id="nextDay">›</button>
+        <button class="today-btn" id="todayBtn">Sot</button>
+      </div>
+      <button class="add-btn" id="addBtn">+ Rezervo</button>
+    </div>
+
+    <div class="timeline-scroll" id="timelineScroll">
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </div>
+
+  <div class="footer-note">Rifreskohet automatikisht · Kliko në grafik për të shtuar një rezervim</div>
+</div>
+
+<!-- Modal per rezervim te ri -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card">
+    <h2>Rezervo një termën</h2>
+    <div class="modal-error" id="modalError"></div>
+    <div class="field">
+      <label>Emri</label>
+      <input type="text" id="bookingName" placeholder="p.sh. Arbeni">
+    </div>
+    <div class="field">
+      <label>Shërbimi</label>
+      <select id="bookingService"></select>
+    </div>
+    <div class="field">
+      <label>Kur do të hysh</label>
+      <input type="time" id="bookingStart">
+    </div>
+    <div class="computed-end" id="computedEndText"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">Anulo</button>
+      <button class="btn-save" id="modalSave">Rezervo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ================== ADRESA E SERVERIT (API) ==================
+  // Kur faqja hapet nga GitHub Pages (nebih123.github.io), serveri ndodhet diku
+  // tjeter - prandaj kerkesat duhet te dergohen te adresa e Render.
+  //
+  //  >>> ZEVENDESO adresen me poshte me adresen TENDE nga Render <<<
+  //      (pa vije te pjerret "/" ne fund)
+  //
+  // Kur faqja hapet direkt nga serveri (localhost:3000 ose vete Render),
+  // lihet bosh, sepse eshte e njejta adrese.
+  const API_BASE = location.hostname.endsWith('github.io')
+    ? 'https://EMRI-YT.onrender.com'
+    : '';
+  // =============================================================
+
+  // ---------- Konfigurim ----------
+  const DAY_START_HOUR = 6;   // 06:00
+  const DAY_END_HOUR = 22;    // 22:00
+  const HOUR_HEIGHT = 56;     // px per ore
+
+  const BLOCK_COLORS = ['#6366f1', '#0ea5e9', '#f59e0b', '#ec4899', '#10b981', '#8b5cf6', '#f97316', '#14b8a6'];
+
+  const SERVICES = [
+    { id: 'urinim', label: 'Urinim', minutes: 3 },
+    { id: 'jashtqitje', label: 'Jashtëqitje', minutes: 10 },
+    { id: 'abdes', label: 'Abdes', minutes: 7 },
+    { id: 'urinim_jashtqitje', label: 'Urinim + Jashtëqitje', minutes: 13 },
+    { id: 'urinim_jashtqitje_abdes', label: 'Urinim + Jashtëqitje + Abdes', minutes: 15 }
+  ];
+
+  const WEEKDAYS = ['E Diel', 'E Hënë', 'E Martë', 'E Mërkurë', 'E Enjte', 'E Premte', 'E Shtunë'];
+  const MONTHS = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor'];
+
+  let viewDate = new Date();
+  let currentBookings = [];
+
+  // ---------- Ndihmëse ----------
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function toDateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function isSameDay(a, b) { return toDateStr(a) === toDateStr(b); }
+  function toMinutes(hhmm) { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; }
+
+  function colorForName(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+    return BLOCK_COLORS[hash % BLOCK_COLORS.length];
+  }
+
+  function formatDateLabel(d) {
+    return WEEKDAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+  }
+
+  function timeAgo(isoString) {
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'tani';
+    if (mins === 1) return '1 minutë mëparë';
+    if (mins < 60) return mins + ' minuta mëparë';
+    const hrs = Math.floor(mins / 60);
+    if (hrs === 1) return '1 orë mëparë';
+    return hrs + ' orë mëparë';
+  }
+
+  // ---------- Statusi live ----------
+  const statusCard = document.getElementById('statusCard');
+  const statusDot = document.getElementById('statusDot');
+  const statusLabel = document.getElementById('statusLabel');
+  const statusSub = document.getElementById('statusSub');
+  const toggleBtn = document.getElementById('toggleBtn');
+
+  function renderStatus(state) {
+    const occupied = !!state.occupied;
+    statusCard.className = 'status-card ' + (occupied ? 'occupied' : 'free');
+    statusDot.textContent = occupied ? '⛔' : '✅';
+    statusLabel.textContent = occupied ? 'E ZËNË TANI' : 'E LIRË TANI';
+
+    let parts = [];
+    if (state.changedAt) parts.push('Ndryshuar ' + timeAgo(state.changedAt));
+    if (state.changedBy) parts.push('nga ' + state.changedBy);
+    statusSub.textContent = parts.length ? parts.join(' · ') : ' ';
+
+    toggleBtn.textContent = occupied ? 'Sheno E LIRË' : 'Sheno E ZËNË';
+  }
+
+  async function fetchStatus() {
+    try {
+      const res = await fetch(API_BASE + '/api/status');
+      renderStatus(await res.json());
+    } catch (e) {
+      statusLabel.textContent = 'Nuk lidhet me serverin';
+    }
+  }
+
+  async function toggleStatus() {
+    toggleBtn.disabled = true;
+    try {
+      const res = await fetch(API_BASE + '/api/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: localStorage.getItem('banjoUserName') || null })
+      });
+      renderStatus(await res.json());
+    } catch (e) {
+      alert('Gabim në lidhje me serverin.');
+    } finally {
+      toggleBtn.disabled = false;
+    }
+  }
+
+  toggleBtn.addEventListener('click', toggleStatus);
+
+  // ---------- Kalendari ----------
+  const dateLabel = document.getElementById('dateLabel');
+  const timeline = document.getElementById('timeline');
+  const prevDay = document.getElementById('prevDay');
+  const nextDay = document.getElementById('nextDay');
+  const todayBtn = document.getElementById('todayBtn');
+  const addBtn = document.getElementById('addBtn');
+
+  function buildGridSkeleton() {
+    timeline.innerHTML = '';
+    timeline.style.height = ((DAY_END_HOUR - DAY_START_HOUR) * HOUR_HEIGHT) + 'px';
+
+    for (let h = DAY_START_HOUR; h < DAY_END_HOUR; h++) {
+      const row = document.createElement('div');
+      row.className = 'hour-row';
+      row.style.height = HOUR_HEIGHT + 'px';
+      row.dataset.hour = h;
+
+      const label = document.createElement('div');
+      label.className = 'hour-label';
+      label.textContent = pad(h) + ':00';
+      row.appendChild(label);
+
+      const halfLine = document.createElement('div');
+      halfLine.className = 'half-line';
+      row.appendChild(halfLine);
+
+      row.addEventListener('click', (e) => onGridClick(e, h));
+      timeline.appendChild(row);
+    }
+  }
+
+  function onGridClick(e, hour) {
+    if (e.target.closest('.booking-block')) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    let minuteInHour = Math.round((offsetY / HOUR_HEIGHT) * 60 / 5) * 5;
+    if (minuteInHour >= 60) minuteInHour = 55;
+    const startTotal = hour * 60 + minuteInHour;
+    openModal(startTotal);
+  }
+
+  function renderNowLine() {
+    const existing = timeline.querySelector('.now-line');
+    if (existing) existing.remove();
+
+    const now = new Date();
+    if (!isSameDay(now, viewDate)) return;
+
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    const dayStartMin = DAY_START_HOUR * 60;
+    const dayEndMin = DAY_END_HOUR * 60;
+    if (nowMin < dayStartMin || nowMin > dayEndMin) return;
+
+    const top = ((nowMin - dayStartMin) / 60) * HOUR_HEIGHT;
+    const line = document.createElement('div');
+    line.className = 'now-line';
+    line.style.top = top + 'px';
+    timeline.appendChild(line);
+  }
+
+  function renderBookings() {
+    timeline.querySelectorAll('.booking-block').forEach(el => el.remove());
+    const dayStartMin = DAY_START_HOUR * 60;
+
+    currentBookings.forEach(b => {
+      const startMin = toMinutes(b.start);
+      const endMin = toMinutes(b.end);
+      const top = ((startMin - dayStartMin) / 60) * HOUR_HEIGHT;
+      const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 22);
+
+      const block = document.createElement('div');
+      block.className = 'booking-block';
+      block.style.top = top + 'px';
+      block.style.height = height + 'px';
+      block.style.background = colorForName(b.name);
+
+      const serviceSuffix = b.service ? ' · ' + escapeHtml(b.service) : '';
+      block.innerHTML =
+        '<span class="b-line"><strong>' + b.start + '–' + b.end + '</strong> · ' + escapeHtml(b.name) + serviceSuffix + '</span>' +
+        '<button class="b-close" title="Anulo">×</button>';
+
+      block.querySelector('.b-close').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        cancelBooking(b.id);
+      });
+
+      timeline.appendChild(block);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function fetchBookings() {
+    try {
+      const res = await fetch(API_BASE + '/api/bookings?date=' + toDateStr(viewDate));
+      currentBookings = await res.json();
+      renderBookings();
+      renderNowLine();
+    } catch (e) {
+      // heshtazi, do te provoje perseri ne rifreskimin tjeter
+    }
+  }
+
+  async function cancelBooking(id) {
+    if (!confirm('Ta anulosh këtë rezervim?')) return;
+    try {
+      await fetch(API_BASE + '/api/bookings/' + id, { method: 'DELETE' });
+      fetchBookings();
+    } catch (e) {
+      alert('Gabim në anulim.');
+    }
+  }
+
+  function updateDateHeader() {
+    dateLabel.textContent = formatDateLabel(viewDate);
+    todayBtn.style.display = isSameDay(viewDate, new Date()) ? 'none' : 'inline-block';
+  }
+
+  function goToDate(d) {
+    viewDate = d;
+    updateDateHeader();
+    fetchBookings();
+  }
+
+  prevDay.addEventListener('click', () => {
+    const d = new Date(viewDate);
+    d.setDate(d.getDate() - 1);
+    goToDate(d);
+  });
+
+  nextDay.addEventListener('click', () => {
+    const d = new Date(viewDate);
+    d.setDate(d.getDate() + 1);
+    goToDate(d);
+  });
+
+  todayBtn.addEventListener('click', () => goToDate(new Date()));
+
+  // ---------- Modal ----------
+  const modalBackdrop = document.getElementById('modalBackdrop');
+  const modalError = document.getElementById('modalError');
+  const bookingName = document.getElementById('bookingName');
+  const bookingService = document.getElementById('bookingService');
+  const bookingStart = document.getElementById('bookingStart');
+  const computedEndText = document.getElementById('computedEndText');
+  const modalSave = document.getElementById('modalSave');
+  const modalCancel = document.getElementById('modalCancel');
+
+  // Mbush listen e sherbimeve nje here, ne nisje
+  SERVICES.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.label + ' (' + s.minutes + ' min)';
+    bookingService.appendChild(opt);
+  });
+
+  function minutesToHHMM(total) {
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return pad(h) + ':' + pad(m);
+  }
+
+  function selectedService() {
+    return SERVICES.find(s => s.id === bookingService.value) || SERVICES[0];
+  }
+
+  function updateComputedEnd() {
+    const start = bookingStart.value;
+    if (!start) { computedEndText.textContent = ''; return; }
+    const svc = selectedService();
+    const endTotal = toMinutes(start) + svc.minutes;
+    const end = minutesToHHMM(Math.min(endTotal, 23 * 60 + 59));
+    computedEndText.innerHTML = 'Do të përfundojë rreth <strong>' + end + '</strong> (' + svc.minutes + ' min)';
+  }
+
+  bookingService.addEventListener('change', updateComputedEnd);
+  bookingStart.addEventListener('input', updateComputedEnd);
+
+  function openModal(startTotalMin) {
+    modalError.style.display = 'none';
+    modalError.textContent = '';
+    bookingName.value = localStorage.getItem('banjoUserName') || '';
+    bookingService.value = localStorage.getItem('banjoLastService') || SERVICES[0].id;
+    bookingStart.value = minutesToHHMM(startTotalMin != null ? startTotalMin : DAY_START_HOUR * 60 + 60);
+    updateComputedEnd();
+    modalBackdrop.classList.add('open');
+  }
+
+  function closeModal() {
+    modalBackdrop.classList.remove('open');
+  }
+
+  addBtn.addEventListener('click', () => openModal(null));
+  modalCancel.addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  modalSave.addEventListener('click', async () => {
+    const name = bookingName.value.trim();
+    const start = bookingStart.value;
+    const svc = selectedService();
+
+    if (!name) { showModalError('Shkruaj emrin.'); return; }
+    if (!start) { showModalError('Zgjidh orën kur do të hysh.'); return; }
+
+    const endTotal = Math.min(toMinutes(start) + svc.minutes, 23 * 60 + 59);
+    const end = minutesToHHMM(endTotal);
+
+    localStorage.setItem('banjoUserName', name);
+    localStorage.setItem('banjoLastService', svc.id);
+
+    modalSave.disabled = true;
+    try {
+      const res = await fetch(API_BASE + '/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: toDateStr(viewDate), start, end, name, service: svc.label })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showModalError(data.error || 'Gabim i panjohur.');
+        return;
+      }
+      closeModal();
+      fetchBookings();
+    } catch (e) {
+      showModalError('Gabim në lidhje me serverin.');
+    } finally {
+      modalSave.disabled = false;
+    }
+  });
+
+  function showModalError(msg) {
+    modalError.textContent = msg;
+    modalError.style.display = 'block';
+  }
+
+  // ---------- Nis gjithcka ----------
+  buildGridSkeleton();
+  updateDateHeader();
+  fetchStatus();
+  fetchBookings();
+
+  setInterval(fetchStatus, 5000);
+  setInterval(fetchBookings, 5000);
+  setInterval(renderNowLine, 30000);
+</script>
+</body>
+</html>
